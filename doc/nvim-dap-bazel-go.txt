@@ -1,0 +1,137 @@
+
+=======================================================================
+INTRODUCTION                                                *dap-bazel-go*
+
+nvim-dap-bazel-go is an extension for nvim-dap that integrates Delve
+with Bazel-built Go projects. It provides pre-configured debugging
+setups for launching Go applications and debugging individual tests
+compiled with Bazel, along with intelligent source path substitution
+and advanced logging.
+
+========================================================================
+CONTENTS                                                    *dap-bazel-go-toc*
+
+    1. Features .............................. |dap-bazel-go-features|
+    2. Configuration ......................... |dap-bazel-go-configuration|
+    3. Loading with LazyVim .................. |dap-bazel-go-lazyvim|
+    4. Usage ................................. |dap-bazel-go-usage|
+    5. Debugging Individual Tests ............ |dap-bazel-go-debug-test|
+    6. Attaching to Bazel Programs ........... |dap-bazel-go-attach|
+    7. Mappings .............................. |dap-bazel-go-mappings|
+
+========================================================================
+FEATURES                                                  *dap-bazel-go-features*
+
+- **Auto-launch Delve:** Tailored for Bazel-built Go binaries.
+- **Test Debugging:** Automatically detects and runs tests or subtests based on the cursor position.
+- **Re-run Last Test:** Automatically rebuilds the last test target before re-running.
+- **Attach to Running Processes:** For Bazel-run programs that spawn multiple processes, use the attach configuration.
+- **Dynamic Configurations:** Debug configurations are defined using functions that compute the required paths and arguments at launch.
+- **Advanced Logging:** Detailed logs help diagnose any issues with the adapter setup.
+
+========================================================================
+CONFIGURATION                                             *dap-bazel-go-configuration*
+
+Register the plugin by calling the setup function in your `init.lua`:
+
+    lua
+        require('dap-bazel-go').setup()
+
+You can customize the plugin by passing a configuration table to the setup function. Example:
+
+    lua
+        require('dap-bazel-go').setup {
+          delve = {
+            path = "dlv",          -- Path to the Delve binary
+            initialize_timeout_sec = 20,
+            port = "${port}",
+            args = {},
+            detached = vim.fn.has("win32") == 0,
+          },
+        }
+
+========================================================================
+Loading with LazyVim                           *dap-bazel-go-lazyvim*
+
+To load nvim-dap-bazel-go with LazyVim, add the following snippet to your
+LazyVim configuration file:
+
+    return {
+      {
+        "VanyaDNDZ/nvim-dap-bazel-go",
+        dependencies = {
+          "mfussenegger/nvim-dap",
+          "nvim-treesitter/nvim-treesitter",
+        },
+        config = function()
+          require("dap-bazel-go").setup({
+            delve = {
+              path = "dlv",
+              initialize_timeout_sec = 20,
+              port = "${port}",
+              args = {},
+              detached = vim.fn.has("win32") == 0,
+            },
+          })
+          -- Define your key mappings:
+          local dbgo = require("dap-bazel-go")
+          vim.keymap.set("n", "<leader>dt", dbgo.debug_test_at_cursor, { desc = "Debug test at cursor" })
+          vim.keymap.set("n", "<leader>df", dbgo.debug_file_test, { desc = "Debug file test" })
+          vim.keymap.set("n", "<leader>dl", dbgo.debug_last_test, { desc = "Re-run last test" })
+          vim.keymap.set("n", "<leader>dfb", dbgo.set_function_breakpoint, { desc = "Set function breakpoint" })
+        end,
+      },
+    }
+
+========================================================================
+USAGE                                                     *dap-bazel-go-usage*
+
+After configuring the plugin, use nvim-dap as usual:
+
+    :lua require('dap').continue()
+
+**Debugging Individual Tests**
+
+- **Debug Test at Cursor:**  
+  Run the test nearest to your cursor:
+  
+      lua
+          require('dap-bazel-go').debug_test_at_cursor()
+
+- **Debug Entire Test File:**  
+  Debug all tests in the current file:
+  
+      lua
+          require('dap-bazel-go').debug_file_test()
+
+- **Re-run Last Test:**  
+  Rebuild and launch the last test session:
+  
+      lua
+          require('dap-bazel-go').debug_last_test()
+
+**Attaching to Bazel Programs**
+
+Due to the nature of `bazel run` (which may start multiple processes), the plugin now provides an attach configuration:
+
+- **Attach to Bazel Program (Bazel):**  
+  Instead of launching a new binary, select this configuration to attach to a running process via a process picker:
+  
+      lua
+          require('dap-bazel-go').select_debug_target()
+
+========================================================================
+MAPPINGS                                               *dap-bazel-go-mappings*
+
+The plugin does not enforce pre-configured key mappings. Create your own, for example:
+
+    lua
+        local dbgo = require('dap-bazel-go')
+        vim.keymap.set("n", "<leader>dt", dbgo.debug_test_at_cursor, { desc = "Debug test at cursor" })
+        vim.keymap.set("n", "<leader>df", dbgo.debug_file_test, { desc = "Debug file test" })
+        vim.keymap.set("n", "<leader>dl", dbgo.debug_last_test, { desc = "Re-run last test" })
+        vim.keymap.set("n", "<leader>dfb", dbgo.set_function_breakpoint, { desc = "Set function breakpoint" })
+
+========================================================================
+vim:tw=78:et:ft=help:norl:
+
